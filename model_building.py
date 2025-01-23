@@ -15,6 +15,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
+from hyperparameter_tuning import tune_and_evaluate_models
 
 def prepare_data(data, target = 'SalePrice', exclude_columns=['Id', 'SalePrice']):
     """
@@ -139,7 +140,7 @@ def build_and_evaluate_models(X_train, X_valid, y_train, y_valid):
     # LightGBM
     lgbm_model = LGBMRegressor(random_state=42, n_estimators=100)
     lgbm_model.fit(X_train, y_train)
-    y_pred_lgbm = lgbm_model.predict(X_valid)  # Fixed the typo here
+    y_pred_lgbm = lgbm_model.predict(X_valid)
     results['LightGBM'] = {
         'RMSE': np.sqrt(mean_squared_error(y_valid, y_pred_lgbm)),
         'MAE': mean_absolute_error(y_valid, y_pred_lgbm),
@@ -151,14 +152,17 @@ if __name__ == "__main__":
     data = pd.read_csv("/Users/sid/Downloads/house_price_prediction/train.csv")
     X_train, X_valid, y_train, y_valid = prepare_data(data)
     X_train_imputed, X_valid_imputed = handle_missing_values(X_train, X_valid)
-    results, feature_importance_df = build_and_evaluate_models(X_train_imputed, X_valid_imputed, y_train, y_valid)
 
-    # Display the results
-    print("\nModel Evaluation Results:")
+    results = tune_and_evaluate_models(X_train_imputed, y_train, X_valid_imputed, y_valid)
+
+    print("\nHyperparameter Tuning Results:")
     for model, metrics in results.items():
         print(f"{model}:")
-        for metric, value in metrics.items():
-            print(f"  {metric}: {value:.4f}")
-
-    print("\nTop 10 Features by Importance:")
-    print(feature_importance_df.head(10))
+        if 'Best Params' in metrics:
+            print(f"  Best Params: {metrics['Best Params']}")
+        if 'RMSE' in metrics:
+            print(f"  RMSE: {metrics['RMSE']:.4f}")
+            print(f"  MAE: {metrics['MAE']:.4f}")
+            print(f"  R2: {metrics['R2']:.4f}")
+        if 'Error' in metrics:
+            print(f"  Error: {metrics['Error']}")
