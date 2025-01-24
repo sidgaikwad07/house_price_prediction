@@ -7,12 +7,13 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+sns.set(style="whitegrid")
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from sklearn.model_selection import train_test_split
 
-sns.set(style="whitegrid")
+
 
 def preprocess_test_data(test_data, train_data, scaler, encoded_columns):
     """
@@ -85,28 +86,16 @@ def preprocess_test_data(test_data, train_data, scaler, encoded_columns):
 
     return test_data_scaled
 
-def plot_prediction_distributions(predictions, model_name):
-    """Plot the distribution of predicted values."""
+def plot_actual_vs_predicted(y_true, y_pred, model_name):
+    """Plot actual vs. predicted values."""
     plt.figure(figsize=(10, 6))
-    sns.histplot(predictions, kde=True, bins=30, color='blue')
-    plt.title(f"Distribution of Predicted Sale Prices ({model_name})")
-    plt.xlabel("Predicted Sale Price")
-    plt.ylabel("Frequency")
-    plt.show()
-
-def compare_models(test_predictions):
-    """Compare predictions from XGBoost and LightGBM."""
-    plt.figure(figsize=(10, 6))
-    plt.scatter(test_predictions['XGBoost_Predictions'], test_predictions['LightGBM_Predictions'], alpha=0.6)
-    plt.plot(
-        [test_predictions['XGBoost_Predictions'].min(), test_predictions['XGBoost_Predictions'].max()],
-        [test_predictions['XGBoost_Predictions'].min(), test_predictions['XGBoost_Predictions'].max()],
-        'r--', lw=2
-    )
-    plt.title("XGBoost vs LightGBM Predictions")
-    plt.xlabel("XGBoost Predictions")
-    plt.ylabel("LightGBM Predictions")
-    plt.show()
+    plt.scatter(y_true, y_pred, alpha=0.6)
+    plt.plot([y_true.min(), y_true.max()], [y_true.min(), y_true.max()], 'r--', lw=2)
+    plt.title(f"Actual vs Predicted Values ({model_name})")
+    plt.xlabel("Actual Values")
+    plt.ylabel("Predicted Values")
+    plt.savefig(f"figures/{model_name}_actual_vs_predicted.png")
+    plt.close()
 
 if __name__ == "__main__":
     # Load datasets
@@ -160,8 +149,8 @@ if __name__ == "__main__":
     test_predictions.to_csv("test_predictions.csv", index=False)
     print("Test predictions saved to 'test_predictions.csv'")
 
-    # Visualize distributions
-    plot_prediction_distributions(test_predictions['XGBoost_Predictions'], "XGBoost")
-    plot_prediction_distributions(test_predictions['LightGBM_Predictions'], "LightGBM")
-    compare_models(test_predictions)
-    plot_prediction_distributions(test_predictions['Final_Predictions'], "Final Combined Predictions")
+    # Plot actual vs predicted values for validation data
+    y_pred_xgb_valid = xgb_model.predict(X_valid)
+    y_pred_lgbm_valid = lgbm_model.predict(X_valid)
+    plot_actual_vs_predicted(y_valid, y_pred_xgb_valid, "XGBoost")
+    plot_actual_vs_predicted(y_valid, y_pred_lgbm_valid, "LightGBM")
